@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allan Wong - Property Listings</title>
+    <style>
+        /* === 1. 基础样式 === */
+        :root {
+            --primary: #E03C3C; 
+            --dark: #222;
+            --grey: #666;
+            --light: #f4f4f4;
+            --bg-white: #fff;
+            --tag-sale: #E03C3C;
+            --tag-rent: #2ecc71;
+            --tag-auction: #f39c12;
+        }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--light); color: var(--dark); padding-bottom: 50px; }
+        * { box-sizing: border-box; }
+
+        /* === 2. 导航栏 === */
+        nav { background: var(--bg-white); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-contact { background: #25D366; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; display: flex; align-items: center; gap: 5px;}
+
+        /* === 3. 封面 Hero === */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+        .hero h1 { font-size: 2.2rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .hero p { color: #eee; font-size: 1.1rem; margin-top: 0; }
+        
+        .search-bar { background: white; padding: 10px; border-radius: 8px; display: flex; width: 100%; max-width: 600px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 20px;}
+        .search-bar input { flex: 1; border: none; padding: 10px; font-size: 1rem; outline: none; }
+        .search-bar button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+
+        /* === 4. 列表网格 === */
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        .section-header { margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px;}
+        .section-title { font-size: 1.8rem; font-weight: bold; color: var(--dark); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+
+        .card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); transition: transform 0.3s; cursor: pointer; border: 1px solid #eee; position: relative;}
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        
+        .card-img-wrap { height: 220px; overflow: hidden; position: relative; background: #eee;}
+        .card-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .status-tag { position: absolute; top: 10px; left: 10px; background: #333; color: white; padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;}
+        .type-tag { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); color: var(--dark); padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; font-weight: bold;}
+        .photo-count-badge { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 2px 8px; font-size: 0.7rem; border-radius: 4px; display: flex; align-items: center; gap: 4px;}
+
+        .card-body { padding: 20px; }
+        .card-price { font-size: 1.4rem; font-weight: 800; color: var(--dark); margin-bottom: 5px; }
+        .card-psf { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; line-height: 1.4; color: #333; height: 46px; overflow: hidden;}
+        .card-location { color: var(--grey); font-size: 0.9rem; margin-bottom: 15px; display: flex; align-items: center; gap: 5px;}
+        .card-features { display: flex; gap: 15px; font-size: 0.85rem; color: var(--dark); margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+        .feat { display: flex; align-items: center; gap: 5px; font-weight: 500;}
+
+        /* === 5. 弹窗与相册 (Gallery Slider) === */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px);}
+        .modal-content { background: white; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; border-radius: 12px; position: relative; animation: slideIn 0.3s; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; z-index: 20; color: white; background: rgba(0,0,0,0.6); width: 35px; height: 35px; text-align: center; line-height: 35px; border-radius: 50%;}
+        
+        /* 相册样式 */
+        .gallery-container { position: relative; height: 400px; background: #000; display: flex; align-items: center; justify-content: center; }
+        .gallery-img { max-width: 100%; max-height: 100%; object-fit: contain; } /* 保持比例完整显示 */
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: white; border: none; font-size: 2rem; padding: 10px 15px; cursor: pointer; transition: 0.3s; z-index: 10;}
+        .slider-btn:hover { background: rgba(255,255,255,0.5); }
+        .prev-btn { left: 0; }
+        .next-btn { right: 0; }
+        .gallery-counter { position: absolute; bottom: 15px; right: 20px; color: white; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 15px; font-size: 0.8rem;}
+
+        .modal-body { padding: 30px; }
+        .detail-group-title { font-size: 0.95rem; font-weight: 700; color: var(--primary); margin: 25px 0 10px 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;}
+        .info-item span { display: block; font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;}
+        .info-item strong { font-size: 0.95rem; color: #222; font-weight: 600;}
+
+        .whatsapp-btn { display: flex; justify-content: center; align-items: center; gap: 10px; background: #25D366; color: white; padding: 16px; font-size: 1.1rem; font-weight: bold; text-decoration: none; border-radius: 8px; margin-top: 30px; transition: 0.3s;}
+        .whatsapp-btn:hover { background: #1da851; transform: translateY(-2px);}
+
+        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @media (max-width: 768px) { .info-grid { grid-template-columns: 1fr 1fr; } .gallery-container {height: 250px;} }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="logo">ALLAN WONG</div>
+    <a href="#" class="nav-contact" id="navWaLink">WhatsApp Me</a>
+</nav>
+
+<div class="hero">
+    <h1>ALLAN WONG PROPERTIES</h1>
+    <p>Your Trusted Real Estate Partner</p>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search Project Name, Area, Rent/Sale..." onkeyup="if(event.key === 'Enter') renderProperties()">
+        <button onclick="renderProperties()">搜索</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="section-header">
+        <div class="section-title">最新房源 (Latest Listings)</div>
+    </div>
+    <div class="grid" id="propertyGrid"></div>
+</div>
+
+<div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="close-btn" onclick="closeModal()">×</div>
+        
+        <div class="gallery-container">
+            <button class="slider-btn prev-btn" onclick="changeImage(-1)">❮</button>
+            <img src="" class="gallery-img" id="m-img">
+            <button class="slider-btn next-btn" onclick="changeImage(1)">❯</button>
+            <div class="gallery-counter" id="img-counter">1 / 1</div>
+        </div>
+
+        <div class="modal-body">
+            <div style="margin-bottom: 15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span id="m-status-badge" style="background:#333; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">-</span>
+                    <span id="m-ref" style="color:#888; font-size:0.8rem;">Ref: -</span>
+                </div>
+                <h2 id="m-title" style="margin: 10px 0 5px 0;"></h2>
+                <div id="m-price" style="color:var(--primary); font-size:1.6rem; font-weight:800;"></div>
+                <div id="m-psf" style="color:#666; font-size: 0.9rem;"></div>
+            </div>
+
+            <div class="detail-group-title">Property Info</div>
+            <div class="info-grid">
+                <div class="info-item"><span>Property Type</span><strong id="m-propType">-</strong></div>
+                <div class="info-item"><span>Sub-Type</span><strong id="m-subType">-</strong></div>
+                <div class="info-item"><span>Unit Type</span><strong id="m-unitType">-</strong></div>
+                <div class="info-item"><span>Bedrooms</span><strong id="m-beds">-</strong></div>
+                <div class="info-item"><span>Bathrooms</span><strong id="m-baths">-</strong></div>
+                <div class="info-item"><span>Car Parks</span><strong id="m-carparks">-</strong></div>
+                <div class="info-item"><span>Furnishing</span><strong id="m-furnish">-</strong></div>
+                <div class="info-item"><span>Occupancy</span><strong id="m-occupancy">-</strong></div>
+                <div class="info-item"><span>Built-up</span><strong id="m-builtUp">-</strong></div>
+            </div>
+
+            <div class="detail-group-title">Location / Address</div>
+            <div class="info-grid">
+                <div class="info-item"><span>State</span><strong id="m-state">-</strong></div>
+                <div class="info-item"><span>Area / District</span><strong id="m-area">-</strong></div>
+                <div class="info-item"><span>Postal Code</span><strong id="m-postal">-</strong></div>
+                <div class="info-item" style="grid-column: span 3;"><span>Street / Address</span><strong id="m-street">-</strong></div>
+            </div>
+
+            <div class="detail-group-title">Land & Title</div>
+            <div class="info-grid">
+                <div class="info-item"><span>Tenure</span><strong id="m-tenure">-</strong></div>
+                <div class="info-item"><span>Lot Type</span><strong id="m-lotType">-</strong></div>
+                <div class="info-item"><span>Land Title</span><strong id="m-landTitle">-</strong></div>
+                <div class="info-item"><span>Land Area</span><strong id="m-landArea">-</strong></div>
+                <div class="info-item"><span>Title Type</span><strong id="m-titleType">-</strong></div>
+                <div class="info-item"><span>Facing</span><strong id="m-facing">-</strong></div>
+            </div>
+
+            <div class="detail-group-title">Description</div>
+            <p id="m-desc" style="line-height: 1.6; color: #444; white-space: pre-line; margin-top: 10px;"></p>
+
+            <a href="#" id="m-wa-btn" target="_blank" class="whatsapp-btn">
+                <span>💬 WhatsApp Allan Wong</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // ★★★ 数据编辑区 (DATA EDIT AREA) ★★★
+    // ============================================
+    
+    const myPhone = "60126975311"; 
+
+    /* ★ 如何添加多张照片？
+       在 'images' 后面加中括号 []，把链接用逗号分开。
+       例如: images: ["链接1", "链接2", "链接3"], 
+    */
+
+    const properties = [
+        {
+            // === 案例 1: 3张照片的公寓 ===
+            id: "1",
+            refNo: "REF-001",
+            heading: "Epic Residence @ Johor Bahru",
+            searchTag: "Epic Residence",
+            listingType: "Sale", 
+            askingPrice: "RM 450,000",
+            pricePsf: "RM 450 psf",
+            propertyType: "Non-Landed",
+            subPropertyType: "Apartment",
+            state: "Johor",
+            area: "Johor Bahru",
+            postalCode: "80350",
+            street: "Jalan Suria Muafakat Utama",
+            
+            // ★ 这里改成了 images 数组 (Array)
+            images: [
+                "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80", // 照片 1 (封面)
+                "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80", // 照片 2 (房间)
+                "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80"  // 照片 3 (客厅)
+            ],
+            
+            details: {
+                tenure: "Leasehold",
+                lotType: "Non Bumi Lot",
+                landTitle: "Residential",
+                titleType: "Strata",
+                unitType: "Intermediate",
+                builtUp: "1,000 sqft",
+                landArea: "-",
+                bedrooms: "3",
+                bathrooms: "2",
+                carParks: "1",
+                furnishing: "Partially Furnished",
+                occupancy: "Tenanted",
+                facing: "North"
+            },
+            description: "Good for investment. High rental yield. Near to CIQ.\nCall Allan for viewing."
+        },
+        {
+            // === 案例 2: 单张照片 ===
+            id: "2",
+            refNo: "AUC-999",
+            heading: "Bank Lelong - Austin Heights Cluster House",
+            searchTag: "Austin Heights",
+            listingType: "Auction",
+            askingPrice: "RM 880,000",
+            pricePsf: "-",
+            propertyType: "Landed",
+            subPropertyType: "Cluster House",
+            state: "Johor",
+            area: "Tebrau",
+            postalCode: "81100",
+            street: "Jalan Austin Heights 1/x",
+            
+            // ★ 只有一张照片也一定要用 [ ] 包起来
+            images: [
+                "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&w=800&q=80"
+            ],
+            
+            details: {
+                tenure: "Freehold",
+                lotType: "Bumi Lot",
+                landTitle: "Residential",
+                titleType: "Individual",
+                unitType: "Corner lot",
+                builtUp: "2,800 sqft",
+                landArea: "34 x 75",
+                bedrooms: "4",
+                bathrooms: "4",
+                carParks: "2",
+                furnishing: "Unfurnished",
+                occupancy: "Vacant",
+                facing: "South-East"
+            },
+            description: "BANK LELONG / AUCTION PROPERTY.\nBelow Market Value 30%.\nAuction Date: 25/12/2025"
+        }
+    ];
+
+    // ============================================
+    // 逻辑代码 (Logic)
+    // ============================================
+
+    document.getElementById('navWaLink').href = `https://wa.me/${myPhone}`;
+
+    // 幻灯片变量
+    let currentImgIndex = 0;
+    let currentPropImages = [];
+
+    function renderProperties() {
+        const grid = document.getElementById('propertyGrid');
+        const searchInput = document.getElementById('searchInput').value.toLowerCase();
+        grid.innerHTML = "";
+
+        properties.forEach(p => {
+            const text = (p.heading + p.area + p.state + p.listingType + p.searchTag).toLowerCase();
+            if(searchInput && !text.includes(searchInput)) return;
+
+            let badgeColor = "#333";
+            if(p.listingType === "Sale") badgeColor = "var(--tag-sale)";
+            if(p.listingType === "Rent" || p.listingType === "Room Rental") badgeColor = "var(--tag-rent)";
+            if(p.listingType === "Auction") badgeColor = "var(--tag-auction)";
+
+            let featureHtml = `
+                <div class="feat">🛏️ ${p.details.bedrooms}</div>
+                <div class="feat">🚿 ${p.details.bathrooms}</div>
+                <div class="feat">📐 ${p.details.builtUp}</div>
+            `;
+            if(p.propertyType === "Industrial" || p.propertyType === "Commercial") {
+                 featureHtml = `<div class="feat">🏗️ ${p.subPropertyType}</div><div class="feat">📐 ${p.details.builtUp}</div>`;
+            }
+
+            // 获取第一张图片作为封面
+            const coverImg = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/800x600?text=No+Photo';
+            const photoCount = p.images ? p.images.length : 0;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => openModal(p, badgeColor);
+
+            card.innerHTML = `
+                <div class="card-img-wrap">
+                    <span class="status-tag" style="background:${badgeColor}">${p.listingType}</span>
+                    <span class="type-tag">${p.propertyType}</span>
+                    <div class="photo-count-badge">📷 ${photoCount}</div>
+                    <img src="${coverImg}" class="card-img" alt="${p.heading}">
+                </div>
+                <div class="card-body">
+                    <div class="card-price">${p.askingPrice}</div>
+                    <div class="card-psf">${p.pricePsf || ''}</div>
+                    <div class="card-title">${p.heading}</div>
+                    <div class="card-location">📍 ${p.area}, ${p.state}</div>
+                    <div class="card-features">${featureHtml}</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        
+        if(grid.innerHTML === "") grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">没有找到相关房源</div>`;
+    }
+
+    function openModal(item, color) {
+        const modal = document.getElementById('detailModal');
+        const d = item.details;
+        
+        // --- 相册逻辑初始化 ---
+        currentPropImages = item.images || []; // 获取当前房源图片数组
+        currentImgIndex = 0; // 重置为第一张
+        updateSlider(); // 显示图片
+
+        document.getElementById('m-ref').innerText = `Ref: ${item.refNo || '-'}`;
+        document.getElementById('m-status-badge').innerText = item.listingType;
+        document.getElementById('m-status-badge').style.background = color;
+
+        document.getElementById('m-title').innerText = item.heading;
+        document.getElementById('m-price').innerText = item.askingPrice;
+        document.getElementById('m-psf').innerText = item.pricePsf || '';
+        
+        document.getElementById('m-propType').innerText = item.propertyType;
+        document.getElementById('m-subType').innerText = item.subPropertyType;
+        document.getElementById('m-unitType').innerText = d.unitType || '-';
+        document.getElementById('m-beds').innerText = d.bedrooms || '-';
+        document.getElementById('m-baths').innerText = d.bathrooms || '-';
+        document.getElementById('m-carparks').innerText = d.carParks || '-';
+        document.getElementById('m-furnish').innerText = d.furnishing || '-';
+        document.getElementById('m-occupancy').innerText = d.occupancy || '-';
+        document.getElementById('m-builtUp').innerText = d.builtUp || '-';
+
+        document.getElementById('m-state').innerText = item.state || '-';
+        document.getElementById('m-area').innerText = item.area || '-';
+        document.getElementById('m-postal').innerText = item.postalCode || '-';
+        document.getElementById('m-street').innerText = item.street || '-';
+
+        document.getElementById('m-tenure').innerText = d.tenure || '-';
+        document.getElementById('m-lotType').innerText = d.lotType || '-';
+        document.getElementById('m-landTitle').innerText = d.landTitle || '-';
+        document.getElementById('m-titleType').innerText = d.titleType || '-';
+        document.getElementById('m-landArea').innerText = d.landArea || '-';
+        document.getElementById('m-facing').innerText = d.facing || '-';
+
+        document.getElementById('m-desc').innerText = item.description || "";
+
+        const msg = `Hi Allan, I am interested in: ${item.heading} (Ref: ${item.refNo})`;
+        document.getElementById('m-wa-btn').href = `https://wa.me/${myPhone}?text=${encodeURIComponent(msg)}`;
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    // --- 相册切换函数 ---
+    function updateSlider() {
+        const imgEl = document.getElementById('m-img');
+        const counterEl = document.getElementById('img-counter');
+        
+        if (currentPropImages.length > 0) {
+            imgEl.src = currentPropImages[currentImgIndex];
+            counterEl.innerText = `${currentImgIndex + 1} / ${currentPropImages.length}`;
+        } else {
+            imgEl.src = 'https://via.placeholder.com/800x600?text=No+Photo';
+            counterEl.innerText = "0 / 0";
+        }
+    }
+
+    function changeImage(n) {
+        if (currentPropImages.length === 0) return;
+        currentImgIndex += n;
+        
+        // 循环播放
+        if (currentImgIndex >= currentPropImages.length) currentImgIndex = 0;
+        if (currentImgIndex < 0) currentImgIndex = currentPropImages.length - 1;
+        
+        updateSlider();
+    }
+
+    function closeModal(e) {
+        if(e && e.target.className !== 'modal-overlay') return;
+        document.getElementById('detailModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    renderProperties();
+</script>
+
+</body>
+</html>
